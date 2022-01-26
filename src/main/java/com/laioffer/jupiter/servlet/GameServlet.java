@@ -2,6 +2,8 @@ package com.laioffer.jupiter.servlet;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.laioffer.jupiter.entity.Game;
+import com.laioffer.jupiter.external.TwitchClient;
+import com.laioffer.jupiter.external.TwitchException;
 import org.apache.commons.io.IOUtils;
 import org.json.JSONObject;
 
@@ -13,7 +15,28 @@ import java.io.IOException;
 @WebServlet(name = "GameServlet", urlPatterns = {"/game"})
 public class GameServlet extends HttpServlet {
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doGet(HttpServletRequest request,
+                         HttpServletResponse response) throws ServletException, IOException {
+        String gameName = request.getParameter("game_name");
+        TwitchClient client = new TwitchClient();
+
+        response.setContentType("application/json;charset=UTF-8");// return json type
+        try {
+            // Return the dedicated game information if gameName is provided in the request URL,
+            // otherwise return the top x games.
+            if (gameName != null) {
+                response.getWriter().print(
+                        new ObjectMapper().writeValueAsString(client.searchGame(gameName)));
+            } else {
+                response.getWriter().print(
+                        new ObjectMapper().writeValueAsString(client.topGames(0)));
+            }
+        } catch (TwitchException e) {
+            throw new ServletException(e);
+        }
+
+
+        /*
         response.setContentType("application/json");// return json type
         JSONObject game = new JSONObject();
         game.put("name", "World of Warcraft");
@@ -24,23 +47,9 @@ public class GameServlet extends HttpServlet {
 
         // Write game information to response body
         response.getWriter().print(game);// output
-
-
+        */
     }
 
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        response.setContentType("application/json");
-        ObjectMapper mapper = new ObjectMapper();
-        Game.Builder builder = new Game.Builder();
-        builder.setName("World of Warcraft");
-        builder.setDeveloper("Blizzard Entertainment");
-        builder.setReleaseTime("Feb 11, 2005");
-        builder.setWebsite("https://www.worldofwarcraft.com");
-        builder.setPrice(49.99);
 
 
-        Game game = builder.build();
-        response.getWriter().print(mapper.writeValueAsString(game));// transfer game object to json by Jackson.
-    }
 }
